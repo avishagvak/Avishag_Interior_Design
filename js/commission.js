@@ -76,7 +76,7 @@ function renderCommissionRow(c) {
                     <option value="${COMMISSION_STATUS.RECEIVED}" ${c.status === COMMISSION_STATUS.RECEIVED ? "selected" : ""}>${COMMISSION_STATUS.RECEIVED}</option>
                 </select>
             </td>
-            <td><button type="button" class="btn-icon" data-action="delete-commission" data-id="${c.id}" title="מחיקה">🗑</button></td>
+            <td class="actions-cell">${deleteBtn(`data-action="delete-commission" data-id="${c.id}"`)}</td>
         </tr>
     `;
 }
@@ -351,7 +351,7 @@ function renderCommissionTable() {
         return;
     }
 
-    const arrow = (col) => (commissionSort.column === col ? (commissionSort.direction === "asc" ? " ▲" : " ▼") : "");
+    const arrow = (col) => sortIndicator(commissionSort.column === col, commissionSort.direction);
 
     const rowsHtml = rows.map((c) => `
         <tr class="table-row clickable-row" data-action="open-client-from-commission" data-client-id="${c.client_id}">

@@ -56,7 +56,7 @@ function renderSupplierLinkRow(cs) {
             <td>${escapeHtml(s.contact_person || "-")}</td>
             <td class="ltr-cell">${escapeHtml(s.phone || "-")}</td>
             <td><input type="text" value="${escapeHtml(cs.notes || "")}" data-action="supplier-link-field" data-field="notes" data-id="${cs.id}" placeholder="מה הוזמן..." /></td>
-            <td><button type="button" class="btn-icon" data-action="unlink-supplier" data-id="${cs.id}" title="הסרת קישור (הספק עצמו יישאר ברשימה הגלובלית)">🗑</button></td>
+            <td class="actions-cell">${deleteBtn(`data-action="unlink-supplier" data-id="${cs.id}"`, "הסרת קישור (הספק עצמו יישאר ברשימה הגלובלית)")}</td>
         </tr>
     `;
 }
@@ -274,7 +274,7 @@ function renderSuppliersTable() {
         return suppliersSort.direction === "asc" ? cmp : -cmp;
     });
 
-    const arrow = (col) => (suppliersSort.column === col ? (suppliersSort.direction === "asc" ? " ▲" : " ▼") : "");
+    const arrow = (col) => sortIndicator(suppliersSort.column === col, suppliersSort.direction);
     const addBtnHtml = `<button type="button" class="btn-primary" data-action="add-supplier">+ ספק חדש</button>`;
 
     if (rows.length === 0) {
@@ -291,9 +291,9 @@ function renderSuppliersTable() {
             <td>${escapeHtml(s.contact_person || "-")}</td>
             <td class="ltr-cell">${escapeHtml(s.phone || "-")}</td>
             <td>${escapeHtml(s.price_notes || "-")}</td>
-            <td>
-                <button type="button" class="btn-icon" data-action="edit-supplier" data-id="${s.id}" title="עריכה">✎</button>
-                <button type="button" class="btn-icon" data-action="delete-supplier" data-id="${s.id}" title="מחיקה">🗑</button>
+            <td class="actions-cell">
+                ${editBtn(`data-action="edit-supplier" data-id="${s.id}"`)}
+                ${deleteBtn(`data-action="delete-supplier" data-id="${s.id}"`)}
             </td>
         </tr>
     `).join("");

@@ -198,7 +198,7 @@ function renderPaymentRow(p) {
             <td><select data-field="status" data-id="${p.id}">${statusOptions}</select></td>
             <td><input type="date" data-field="paid_date" data-id="${p.id}" value="${p.paid_date || ""}" /></td>
             <td><input type="text" class="inline-text" placeholder="הערות..." value="${escapeHtml(p.notes || "")}" data-field="notes" data-id="${p.id}" /></td>
-            <td><button type="button" class="btn-icon" data-action="delete-payment" data-id="${p.id}">מחיקה</button></td>
+            <td class="actions-cell">${deleteBtn(`data-action="delete-payment" data-id="${p.id}"`)}</td>
         </tr>
     `;
 }
@@ -365,7 +365,7 @@ function renderPaymentsTable() {
         return;
     }
 
-    const arrow = (col) => (paymentsSort.column === col ? (paymentsSort.direction === "asc" ? " ▲" : " ▼") : "");
+    const arrow = (col) => sortIndicator(paymentsSort.column === col, paymentsSort.direction);
 
     const rowsHtml = rows.map((p) => {
         const lateStyle = p.status === PAYMENT_STATUS.LATE ? 'style="background:var(--pastel-red-bg);"' : "";

@@ -63,7 +63,7 @@ function renderClientsTable() {
         return;
     }
 
-    const arrow = (col) => (clientsSort.column === col ? (clientsSort.direction === "asc" ? " ▲" : " ▼") : "");
+    const arrow = (col) => sortIndicator(clientsSort.column === col, clientsSort.direction);
 
     const rowsHtml = rows.map((c) => `
         <tr class="table-row clickable-row" data-action="open-client" data-id="${c.id}">
@@ -81,7 +81,7 @@ function renderClientsTable() {
             </td>
             <td>${formatDate(leadContactDateMap[c.id] || c.created_at)}</td>
             <td class="actions-cell">
-                <button type="button" class="btn-icon" data-action="delete-client" data-id="${c.id}" title="מחיקה">🗑</button>
+                ${deleteBtn(`data-action="delete-client" data-id="${c.id}"`)}
             </td>
         </tr>
     `).join("");
@@ -344,7 +344,7 @@ function renderTrackSection(c) {
                 <div class="span-2"><span class="detail-label">הערות/דיוקים למסלול</span><span>${escapeHtml(c.track_notes || "-")}</span></div>
             </div>
         `;
-        const extraHeader = `<button class="btn-small btn-ghost" data-action="edit-track">עריכה</button>`;
+        const extraHeader = editBtn(`data-action="edit-track"`);
         return renderCollapsibleSection("track", "מסלול ותמחור", body, { extraHeaderHtml: extraHeader });
     }
 
@@ -389,7 +389,7 @@ function renderBasicSection(c) {
                 <div><span class="detail-label">כתובת</span><span>${escapeHtml(c.address || "-")}</span></div>
             </div>
         `;
-        const extraHeader = `<button class="btn-small btn-ghost" data-action="edit-basic">עריכה</button>`;
+        const extraHeader = editBtn(`data-action="edit-basic"`);
         return renderCollapsibleSection("basic", "פרטים אישיים", body, { extraHeaderHtml: extraHeader });
     }
 
@@ -422,7 +422,7 @@ function renderStatusSection(c) {
                 <div><span class="detail-label">אצל מי הכדור</span><span class="${courtBadgeClass(c.ball_in_court)}">${escapeHtml(c.ball_in_court)}</span></div>
             </div>
         `;
-        const extraHeader = `<button class="btn-small btn-ghost" data-action="edit-status">עריכה</button>`;
+        const extraHeader = editBtn(`data-action="edit-status"`);
         return renderCollapsibleSection("status", "סטטוס פרויקט", body, { extraHeaderHtml: extraHeader });
     }
 
@@ -464,7 +464,7 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
                 <div class="span-2"><span class="detail-label">גוונים וחומריות</span><span>${escapeHtml(c.color_materials || "-")}</span></div>
             </div>
         `;
-        const extraHeader = `<button class="btn-small btn-ghost" data-action="edit-home">עריכה</button>`;
+        const extraHeader = editBtn(`data-action="edit-home"`);
         return renderCollapsibleSection("home", "פרטי הנכס", body, { extraHeaderHtml: extraHeader });
     }
 
@@ -489,7 +489,7 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
     const customRows = homeDraft.room_types.custom.map((val, i) => `
         <div class="dynamic-row" data-index="${i}">
             <input type="text" data-action="custom-space-text" data-index="${i}" value="${escapeHtml(val)}" placeholder="חלל נוסף..." />
-            <button type="button" class="btn-icon" data-action="remove-custom-space" data-index="${i}">הסרה</button>
+            ${deleteBtn(`data-action="remove-custom-space" data-index="${i}"`, "הסרה")}
         </div>
     `).join("");
 

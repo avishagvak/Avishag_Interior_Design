@@ -49,7 +49,7 @@
             </div>
             <nav class="main-nav">
                 <span class="nav-ind" aria-hidden="true"></span>
-                <button class="nav-btn active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>דשבורד</span></button>
+                <button class="nav-btn active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9v10a1 1 0 0 0 1 1H10v-5h4v5h3.5a1 1 0 0 0 1-1V9"/></svg><span>ראשי</span></button>
                 <button class="nav-btn" data-view="leads"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M8 10h8M8 13h5"/></svg><span>פניות</span></button>
                 <button class="nav-btn" data-view="clients"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20c0-2.8-1.7-4.9-4.2-5.7"/></svg><span>לקוחות</span></button>
                 <button class="nav-btn" data-view="tasks"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/></svg><span>משימות</span></button>
@@ -69,7 +69,7 @@
         <div class="main-wrap">
             <header class="top-bar glass">
                 <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-label="פתיחת התפריט" aria-controls="side-nav" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-                <h1 id="view-title">דשבורד</h1>
+                <h1 id="view-title">ראשי</h1>
                 <div class="user-info">
                     <span id="user-email"></span>
                     <button type="button" class="icon-btn" id="mode-btn" aria-label="מעבר בין מצב בהיר לכהה" title="מצב בהיר/כהה"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
@@ -79,7 +79,7 @@
             </header>
 
             <main>
-                <!-- ===== דשבורד ===== -->
+                <!-- ===== ראשי (לוז שבועי, משימות פתוחות, מספרים) ===== -->
                 <section id="dashboard-view" class="app-view">
                     <div class="view-header greeting">
                         <h2 id="greeting-title">שלום, אבישג</h2>
@@ -168,6 +168,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/tracks.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/leads.js"></script>

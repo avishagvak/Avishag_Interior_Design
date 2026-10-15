@@ -44,8 +44,8 @@ function renderTracksTable() {
             <td>${escapeHtml(t.name)}</td>
             <td>${escapeHtml(t.description || "-")}</td>
             <td class="actions-cell">
-                <button class="btn-icon" data-action="edit-track-row" data-id="${t.id}">עריכה</button>
-                <button class="btn-icon" data-action="delete-track-row" data-id="${t.id}" title="מחיקה">🗑</button>
+                ${editBtn(`data-action="edit-track-row" data-id="${t.id}"`)}
+                ${deleteBtn(`data-action="delete-track-row" data-id="${t.id}"`)}
             </td>
         </tr>
     `).join("");
@@ -108,7 +108,7 @@ function openTrackForm(existingTrack) {
         <div class="dynamic-row" data-index="${i}">
             <input type="text" placeholder="שם שלב (לא חובה)" data-action="template-stage" data-index="${i}" value="${escapeHtml(row.stage)}" />
             <input type="text" placeholder="שם משימה" data-action="template-task" data-index="${i}" value="${escapeHtml(row.task)}" />
-            <button type="button" class="btn-icon" data-action="remove-template-row" data-index="${i}">הסרה</button>
+            ${deleteBtn(`data-action="remove-template-row" data-index="${i}"`, "הסרה")}
         </div>
     `).join("") : "";
 

@@ -34,7 +34,7 @@ function renderLeadsTable() {
         const isIrrelevant = lead.status === LEAD_STATUS.IRRELEVANT;
         const rowClass = isIrrelevant ? "table-row dim" : "table-row";
 
-        let actions = `<button class="btn-icon" data-action="edit-lead" data-id="${lead.id}">עריכה</button>`;
+        let actions = "";
 
         if (lead.status === LEAD_STATUS.OPEN) {
             actions += `<button class="btn-small btn-primary" data-action="convert-lead" data-id="${lead.id}">המרה ללקוח</button>`;
@@ -42,7 +42,8 @@ function renderLeadsTable() {
         } else if (lead.status === LEAD_STATUS.IRRELEVANT) {
             actions += `<button class="btn-small btn-ghost" data-action="reopen-lead" data-id="${lead.id}">החזרה לפתוח</button>`;
         }
-        actions += `<button class="btn-icon" data-action="delete-lead" data-id="${lead.id}" title="מחיקה">🗑</button>`;
+        // עריכה ומחיקה תמיד אחרונות - כך הן נצמדות לשמאל, כמו בכל הטבלאות
+        actions += editBtn(`data-action="edit-lead" data-id="${lead.id}"`) + deleteBtn(`data-action="delete-lead" data-id="${lead.id}"`);
 
         return `
             <tr class="${rowClass}">

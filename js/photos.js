@@ -97,7 +97,7 @@ function renderPhotoThumb(p, type) {
                     data-id="${p.id}"
                     title="${p.is_portfolio_featured ? "מוצג בפורטפוליו" : "סמני לתצוגה בפורטפוליו"}"
                 >★</button>
-                <button type="button" class="photo-delete" data-action="delete-photo" data-id="${p.id}" title="מחיקה">🗑</button>
+                <button type="button" class="photo-delete" data-action="delete-photo" data-id="${p.id}" title="מחיקה" aria-label="מחיקה">${UI_ICONS.delete}</button>
             </div>
         </div>
     `;

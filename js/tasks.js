@@ -63,7 +63,7 @@ async function loadTasksView() {
 }
 
 function taskSortValue(task, column) {
-    if (column === "client") return globalTasksClientNames[task.client_id] || "";
+    if (column === "client") return task.client_id ? (globalTasksClientNames[task.client_id] || "") : "משימה כללית";
     if (column === "stage") return task.stage_source || "";
     if (column === "title") return task.title || "";
     return task[column] || "";
@@ -96,7 +96,7 @@ function renderGlobalTasksTable() {
         return dir === "asc" ? cmp : -cmp;
     });
 
-    const arrow = (c) => (col === c ? (dir === "asc" ? " ▲" : " ▼") : "");
+    const arrow = (c) => sortIndicator(col === c, dir);
 
     const rowsHtml = rows.map((t) => `
         <tr class="table-row ${t.status === TASK_STATUS.DONE ? "dim" : ""}">
@@ -106,9 +106,9 @@ function renderGlobalTasksTable() {
                 </label>
             </td>
             <td>
-                <button type="button" class="btn-icon" data-action="open-task-client" data-client-id="${t.client_id}">
-                    ${escapeHtml(globalTasksClientNames[t.client_id] || "לקוח לא ידוע")}
-                </button>
+                ${t.client_id
+                    ? `<button type="button" class="link-btn" data-action="open-task-client" data-client-id="${t.client_id}">${escapeHtml(globalTasksClientNames[t.client_id] || "לקוח לא ידוע")}</button>`
+                    : `<span class="dt-general">משימה כללית</span>`}
             </td>
             <td>${escapeHtml(t.title)}</td>
             <td>${escapeHtml(t.stage_source || "-")}</td>
@@ -249,7 +249,7 @@ function renderTaskRow(t) {
                 data-id="${t.id}"
                 title="תזכורת ויזואלית (כשעבר תאריך היעד, השורה תודגש)"
             >🔔</button>
-            <button type="button" class="btn-icon" data-action="remove-task" data-id="${t.id}">הסרה</button>
+            ${deleteBtn(`data-action="remove-task" data-id="${t.id}"`, "הסרה")}
         </div>
     `;
 }

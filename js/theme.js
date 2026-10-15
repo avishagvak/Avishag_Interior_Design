@@ -241,10 +241,14 @@
 
     // ---------- אנימציות תוכן ----------
 
+    // אנימציית כניסה פעם אחת בכל מעבר מסך. המחלקה מוסרת בסיום, כדי שרענון של תוכן
+    // (למשל פתיחת קטע בכרטיס לקוח) לא יפעיל את האנימציה שוב.
     function replay(el) {
         el.classList.remove("view-enter");
         void el.offsetWidth;
         el.classList.add("view-enter");
+        clearTimeout(el._enterTimer);
+        el._enterTimer = setTimeout(() => el.classList.remove("view-enter"), 900);
     }
 
     // ספירה עולה למספרים בכרטיסי הדשבורד
@@ -264,15 +268,30 @@
         })(start);
     }
 
+    // ברכה לפי שעה + אימוג'י, תאריך לועזי, תאריך עברי וחג (אם יש)
     function greeting() {
         const t = document.getElementById("greeting-title");
         const d = document.getElementById("greeting-date");
         if (!t) return;
-        const h = new Date().getHours();
-        const part = h < 5 ? "לילה טוב" : h < 12 ? "בוקר טוב" : h < 17 ? "צהריים טובים" : h < 21 ? "ערב טוב" : "לילה טוב";
-        t.textContent = `${part}, אבישג`;
-        if (d) d.textContent = new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+        const now = new Date();
+        const h = now.getHours();
+        const [part, emoji] =
+            h >= 5 && h < 12 ? ["בוקר טוב", "☀️"] :
+            h >= 12 && h < 17 ? ["צהריים טובים", "❤️"] :
+            h >= 17 && h < 21 ? ["ערב טוב", "🌙"] :
+            ["לילה טוב", "🥂"];
+        t.innerHTML = `${part}, אבישג <span class="greet-emoji" aria-hidden="true">${emoji}</span>`;
+        if (d) {
+            const greg = now.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+            let heb = "", hol = "";
+            if (typeof hebrewDate === "function") {
+                heb = hebrewDate(now);
+                hol = jewishHolidays(now).map((x) => x.name).join(", ");
+            }
+            d.innerHTML = `${greg}${heb ? ` <span class="greet-sep">·</span> ${heb}` : ""}${hol ? ` <span class="greet-hol">${hol}</span>` : ""}`;
+        }
     }
+    window.renderGreeting = greeting;
 
     // ---------- הפעלה ----------
 
