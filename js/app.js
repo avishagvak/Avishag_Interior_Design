@@ -39,7 +39,9 @@ const STYLE_OPTIONS = [
 // ---------- אלמנטים כלליים ----------
 
 const loginView = document.getElementById("login-view");
-const dashboardView = document.getElementById("dashboard-view");
+// המעטפת של האפליקציה (תפריט + מסכים). שונה מ-"dashboard-view" כי זה היה מזהה כפול:
+// גם המעטפת וגם מסך הדשבורד נשאו אותו id, ולכן מסך הדשבורד לא הוצג אף פעם.
+const dashboardView = document.getElementById("app-shell");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout-btn");

@@ -1,4 +1,5 @@
 erDiagram
+    %% עודכן 15.10.2026: שינויי שלב 10 בעמלות (supplier_id במקום company_name, נוסף branch_contact_phone)
 
     LEADS ||--o| CLIENTS : "הופך ל"
     TRACKS ||--o{ CLIENTS : "נבחר על ידי"
@@ -13,6 +14,7 @@ erDiagram
     CLIENTS ||--o{ CALENDAR_EVENTS : "כולל"
     CLIENTS ||--o{ CLIENT_SUPPLIERS : "משתמש ב"
     SUPPLIERS ||--o{ CLIENT_SUPPLIERS : "מקושר ל"
+    SUPPLIERS ||--o{ COMMISSION_INCOME : "משלם עמלה"
 
     LEADS {
         uuid id PK
@@ -35,6 +37,7 @@ erDiagram
         uuid id PK
         uuid track_id FK
         string stage_name "שם שלב"
+        string task_name "שם המשימה"
         int order_index "סדר בתהליך"
     }
 
@@ -67,10 +70,13 @@ erDiagram
         text description "פירוט"
         date due_date "תאריך יעד"
         boolean reminder_active "תזכורת פעילה"
-        string status "פתוח / בביצוע / הושלם"
+        string status "פתוח / הושלם"
         string stage_source "מקור: תבנית מסלול או ידני"
     }
 
+    %% ⚠️ הערה חשובה (21.8.2026): כשאבישג פותחת מסלול חדש דרך מסך "מסלולים",
+    %% צריך להחליט באותו רגע כמה פעימות תשלום יש לו ומה האחוז/סכום לכל פעימה
+    %% (בדומה להחלטה שכבר קיימת על תבנית המשימות של המסלול). ראו js/tracks.js.
     PAYMENTS {
         uuid id PK
         uuid client_id FK
@@ -87,8 +93,9 @@ erDiagram
     COMMISSION_INCOME {
         uuid id PK
         uuid client_id FK
-        string company_name "שם חברת העיצוב"
-        string branch_contact "איש קשר בסניף"
+        uuid supplier_id FK "הספק/חברת העיצוב - מתוך SUPPLIERS (שלב 10)"
+        string branch_contact "איש קשר בסניף - טקסט חופשי"
+        string branch_contact_phone "טלפון איש הקשר בסניף (שלב 10)"
         decimal deal_amount "סכום העסקה שנסגרה"
         decimal commission_percent "אחוז העמלה - משתנה"
         decimal commission_amount "סכום העמלה"
@@ -134,7 +141,7 @@ erDiagram
         string name "שם הספק/קבלן"
         string contact_person "איש קשר"
         string phone
-        text price_notes "הערות מחירון"
+        text price_notes "הערות - בממשק מוצג כ'הערות'"
     }
 
     CLIENT_SUPPLIERS {
