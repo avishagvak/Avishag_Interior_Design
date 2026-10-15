@@ -15,6 +15,8 @@ const GENERAL_TASK_LABEL = "משימה כללית";
 const WEEKDAY_NAMES = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
 
 let dashWeekOffset = 0;      // 0 = השבוע, -1 = שבוע שעבר, 1 = שבוע הבא
+const googleWeekCache = {};  // אירועי Google לפי תחילת שבוע, כדי שמעבר בין שבועות יהיה מיידי
+let googleSyncState = "pending"; // ok / off (עוד לא הוגדר) / error
 let dashTasks = [];
 let dashClientNames = {};
 
@@ -77,7 +79,7 @@ async function loadDashboardView() {
                     <h3>הלוז השבועי</h3>
                     <span class="muted" id="wc-range"></span>
                 </div>
-                <span class="wc-sync" title="האירועים יגיעו מיומן Google ייעודי שיחובר בשלב 12">יומן Google · יחובר בהמשך</span>
+                <span class="wc-sync" id="wc-sync" data-state="pending">יומן Google</span>
                 <div class="wc-nav" role="group" aria-label="מעבר בין שבועות">
                     <button type="button" class="btn-act" data-week="-1" title="שבוע קודם" aria-label="שבוע קודם">${UI_ICONS.prev}</button>
                     <button type="button" class="btn-ghost btn-small" data-week="0">השבוע</button>
@@ -152,14 +154,36 @@ async function loadWeekCalendar() {
         if (b.dataset.week === "0") b.disabled = dashWeekOffset === 0;
     });
 
-    let events = [];
-    const { data, error } = await client
-        .from("calendar_events")
-        .select("id, title, start_time, end_time, event_type, client_id")
-        .gte("start_time", start.toISOString())
-        .lt("start_time", end.toISOString())
-        .order("start_time", { ascending: true });
-    if (!error) events = data || [];
+    // שני מקורות במקביל: יומן Google (דרך פונקציית השרת google-calendar) ואירועים שנשמרו בטבלה
+    const [{ data: dbEvents, error: dbError }, googleEvents] = await Promise.all([
+        client.from("calendar_events")
+            .select("id, title, start_time, end_time, event_type, client_id")
+            .gte("start_time", start.toISOString())
+            .lt("start_time", end.toISOString())
+            .order("start_time", { ascending: true }),
+        fetchGoogleWeek(start, end),
+    ]);
+    // אם בינתיים עברו לשבוע אחר - לא מציירים תוצאה ישנה
+    if (+start !== +startOfWeek(dashWeekOffset)) return;
+    renderSyncBadge();
+
+    // מאחדים לפורמט אחד: כל אירוע משויך ליום (או לכמה ימים, באירוע של כל היום)
+    const byDay = {};
+    const addTo = (iso, ev) => { (byDay[iso] = byDay[iso] || []).push(ev); };
+    (dbError ? [] : dbEvents || []).forEach((ev) => addTo(isoDay(new Date(ev.start_time)), { ...ev, all_day: false }));
+    googleEvents.forEach((ev) => {
+        if (ev.all_day) {
+            const [y, m, d] = ev.start_time.split("-").map(Number);
+            const [y2, m2, d2] = (ev.end_time || ev.start_time).split("-").map(Number);
+            const dEnd = new Date(y2, m2 - 1, d2); // ב-Google תאריך הסיום של אירוע "כל היום" הוא היום שאחרי
+            const day = new Date(y, m - 1, d);
+            do { addTo(isoDay(day), ev); day.setDate(day.getDate() + 1); } while (day < dEnd);
+        } else {
+            addTo(isoDay(new Date(ev.start_time)), ev);
+        }
+    });
+    Object.values(byDay).forEach((list) => list.sort((a, b) =>
+        (b.all_day - a.all_day) || String(a.start_time).localeCompare(String(b.start_time))));
 
     const todayIso = isoDay(new Date());
     let html = "";
@@ -167,7 +191,7 @@ async function loadWeekCalendar() {
         const day = new Date(start); day.setDate(day.getDate() + i);
         const iso = isoDay(day);
         const holidays = jewishHolidays(day);
-        const dayEvents = events.filter((ev) => isoDay(new Date(ev.start_time)) === iso);
+        const dayEvents = byDay[iso] || [];
         const shown = dayEvents.slice(0, 3);
         const classes = ["wc-day"];
         if (iso === todayIso) classes.push("is-today");
@@ -185,9 +209,10 @@ async function loadWeekCalendar() {
                 ${holidays.map((h) => `<span class="wc-hol ${h.major ? "major" : ""}">${h.name}</span>`).join("")}
                 <ul class="wc-ev">
                     ${shown.map((ev) => {
-                        const t = new Date(ev.start_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+                        const t = ev.all_day ? "כל היום" : new Date(ev.start_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
                         const attrs = ev.client_id ? `data-action="dash-open-client" data-client-id="${ev.client_id}" role="button" tabindex="0"` : "";
-                        return `<li ${attrs} title="${escapeHtml(ev.title || "")}"><time>${t}</time> ${escapeHtml(ev.title || "")}</li>`;
+                        const tip = [ev.title, ev.location].filter(Boolean).join(" · ");
+                        return `<li class="${ev.all_day ? "all-day" : ""}" ${attrs} data-tip="${escapeHtml(tip)}"><time>${t}</time> ${escapeHtml(ev.title || "")}</li>`;
                     }).join("")}
                     ${dayEvents.length > shown.length ? `<li class="wc-more">ועוד ${dayEvents.length - shown.length}</li>` : ""}
                 </ul>
@@ -200,6 +225,43 @@ async function loadWeekCalendar() {
         const today = grid.querySelector(".is-today");
         if (today) grid.scrollLeft = today.offsetLeft - grid.clientWidth / 2 + today.offsetWidth / 2;
     }
+}
+
+// אירועי Google לשבוע. אם הפונקציה עוד לא הוקמה או שלא הוגדרה כתובת היומן - מחזיר רשימה ריקה בשקט.
+async function fetchGoogleWeek(start, end) {
+    const key = start.toISOString();
+    if (googleWeekCache[key]) return googleWeekCache[key];
+    try {
+        const { data, error } = await client.functions.invoke("google-calendar", {
+            body: { from: start.toISOString(), to: end.toISOString() },
+        });
+        if (error) {
+            const status = error.context && error.context.status;
+            googleSyncState = status === 404 || status === 503 ? "off" : "error";
+            return [];
+        }
+        googleSyncState = "ok";
+        googleWeekCache[key] = (data && data.events) || [];
+        return googleWeekCache[key];
+    } catch (e) {
+        googleSyncState = "error";
+        return [];
+    }
+}
+
+function renderSyncBadge() {
+    const el = document.getElementById("wc-sync");
+    if (!el) return;
+    const map = {
+        ok: ["מסונכרן עם Google", "האירועים מגיעים מיומן Google הייעודי"],
+        off: ["יומן Google · עוד לא חובר", "צריך להקים את החיבור לפי מסמך האב"],
+        error: ["Google · שגיאה בסנכרון", "לא הצלחנו לקרוא את היומן כרגע. אפשר לנסות שוב בהמשך"],
+        pending: ["יומן Google", ""],
+    };
+    const [label, tip] = map[googleSyncState] || map.pending;
+    el.dataset.state = googleSyncState;
+    el.textContent = label;
+    el.dataset.tip = tip;
 }
 
 // ---------- משימות פתוחות ----------

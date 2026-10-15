@@ -28,14 +28,16 @@ async function loadCurrentClientPhotos(clientId) {
 
     const rows = data || [];
 
-    // הבאקט פרטי -> לכל תמונה נוצרת signed URL בתוקף שעה, בכל טעינה מחדש
-    await Promise.all(rows.map(async (p) => {
+    // הבאקט פרטי -> כתובות חתומות בתוקף שעה, בבקשה אחת לכל התמונות (מהיר יותר מבקשה לכל תמונה)
+    if (rows.length) {
         const { data: signed, error: signError } = await client
             .storage
             .from(PHOTOS_BUCKET)
-            .createSignedUrl(p.storage_url, SIGNED_URL_TTL_SECONDS);
-        p.signed_url = signError ? null : signed.signedUrl;
-    }));
+            .createSignedUrls(rows.map((p) => p.storage_url), SIGNED_URL_TTL_SECONDS);
+        const byPath = {};
+        (signed || []).forEach((s) => { if (s && !s.error) byPath[s.path] = s.signedUrl; });
+        rows.forEach((p) => { p.signed_url = signError ? null : (byPath[p.storage_url] || null); });
+    }
 
     currentClientPhotos = rows;
 }
@@ -243,12 +245,12 @@ function renderLightbox() {
     const hasNext = lightboxIndex < lightboxPhotos.length - 1;
 
     openModal(`
-        <div class="photo-lightbox">
+        <div class="photo-lightbox" role="dialog" aria-label="תמונה ${lightboxIndex + 1} מתוך ${lightboxPhotos.length}">
             <button type="button" class="lightbox-close" id="lightbox-close-btn" title="סגירה">✕</button>
-            <span class="lightbox-counter">${lightboxIndex + 1} / ${lightboxPhotos.length}</span>
-            ${hasPrev ? `<button type="button" class="lightbox-nav lightbox-prev" id="lightbox-prev-btn" title="הקודמת">→</button>` : ""}
+            <span class="lightbox-counter">${lightboxIndex + 1} מתוך ${lightboxPhotos.length}</span>
+            ${hasPrev ? `<button type="button" class="lightbox-nav lightbox-prev" id="lightbox-prev-btn" title="התמונה הקודמת" aria-label="התמונה הקודמת">→</button>` : ""}
             <img class="lightbox-img" src="${photo.signed_url || ""}" alt="" />
-            ${hasNext ? `<button type="button" class="lightbox-nav lightbox-next" id="lightbox-next-btn" title="הבאה">←</button>` : ""}
+            ${hasNext ? `<button type="button" class="lightbox-nav lightbox-next" id="lightbox-next-btn" title="התמונה הבאה" aria-label="התמונה הבאה">←</button>` : ""}
         </div>
     `);
 

@@ -22,8 +22,14 @@
         { name: "ערפל", accent: "#44617a", blobs: ["#d6dee6", "#c3d3e0", "#e9e4dc"] },
         { name: "מנטה", accent: "#1d8068", blobs: ["#b5f0dc", "#d6f5a8", "#a8e6f5"] },
         { name: "לילה", accent: "#4f5bd5", blobs: ["#8ea2ff", "#c6a8ff", "#7fd0ff"] },
+        { name: "טרקוטה", accent: "#a5502e", blobs: ["#f2c9a8", "#e9b8a5", "#f7e1c8"] },
+        { name: "אבן", accent: "#5c6166", blobs: ["#d9d9d6", "#cfd6dc", "#ece8e1"] },
+        { name: "זית", accent: "#66692c", blobs: ["#dfe2b8", "#efe5c4", "#cfd9b0"] },
+        { name: "אוקיינוס", accent: "#1f4e79", blobs: ["#a9c8e8", "#b8e0e8", "#d6def5"] },
+        { name: "פודרה", accent: "#a8566f", blobs: ["#f5d3dc", "#ead9f2", "#fbe4d6"] },
+        { name: "קקאו", accent: "#6b4a3a", blobs: ["#e6cdb8", "#d9c2b0", "#f1e1d0"] },
     ];
-    const QUICK = [0, 1, 2, 3, 5, 11];
+    const THEMES_VISIBLE = 6; // כמה ערכות מוצגות לפני "עוד"
     const svgIcon = (d) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
     const ICON_MOON = svgIcon('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>');
     const ICON_SUN = svgIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
@@ -117,13 +123,14 @@
             <p class="muted" style="margin:0">ההגדרות נשמרות במכשיר הזה.</p>
 
             <h3>ערכת נושא</h3>
-            <div class="theme-grid">
+            <div class="theme-grid" id="ap-theme-grid">
                 ${THEMES.map((t, i) => `
-                    <button type="button" class="theme-tile" data-theme="${i}" aria-pressed="false" aria-label="ערכת ${t.name}">
+                    <button type="button" class="theme-tile ${i >= THEMES_VISIBLE ? "is-extra" : ""}" data-theme="${i}" aria-pressed="false" aria-label="ערכת ${t.name}">
                         <span class="pv">${t.blobs.map((c) => `<i style="background:${c}"></i>`).join("")}<em style="background:${t.accent}"></em></span>
                         <span class="nm">${t.name}</span>
                     </button>`).join("")}
             </div>
+            <button type="button" class="btn-ghost btn-small ap-more" data-ap="more" aria-expanded="false" aria-controls="ap-theme-grid">עוד ${THEMES.length - THEMES_VISIBLE} ערכות</button>
             <div class="ap-custom">
                 <input type="color" id="ap-color" value="#7a6a52" aria-label="בחירת צבע משלך" />
                 <div><b>צבע משלך</b><br><small class="muted">בוחרים צבע אחד, והמערכת בונה ממנו את הרקע.</small></div>
@@ -170,6 +177,7 @@
             if (fs) { S.fontSize = +fs.dataset.fs; save(); apply(); moveIndicator(); return; }
             const a = e.target.closest("[data-ap]");
             if (a && a.dataset.ap === "close") return closePanel();
+            if (a && a.dataset.ap === "more") return setMoreThemes(!panel.classList.contains("show-all-themes"));
             if (a && a.dataset.ap === "reset") return withTransition(() => { S = { ...DEFAULTS }; save(); apply(); moveIndicator(); }, e);
         });
         panel.addEventListener("input", (e) => {
@@ -180,8 +188,17 @@
         scrim.addEventListener("click", closePanel);
     }
 
+    function setMoreThemes(open) {
+        panel.classList.toggle("show-all-themes", open);
+        const btn = panel.querySelector(".ap-more");
+        btn.setAttribute("aria-expanded", open);
+        btn.textContent = open ? "פחות ערכות" : `עוד ${THEMES.length - THEMES_VISIBLE} ערכות`;
+    }
+
     let lastFocus = null;
     function openPanel() {
+        // אם הערכה הפעילה נמצאת בין הנוספות - פותחים את הרשימה המלאה כדי שתראי אותה מסומנת
+        setMoreThemes(!S.custom && S.theme >= THEMES_VISIBLE);
         lastFocus = document.activeElement;
         panel.classList.add("on"); scrim.classList.add("on");
         panel.setAttribute("aria-hidden", "false");
@@ -206,7 +223,6 @@
             panel.querySelector(`[data-out="${r.dataset.range}"]`).textContent = S[r.dataset.range] + UNITS[r.dataset.range];
         });
         if (S.custom) panel.querySelector("#ap-color").value = S.custom;
-        document.querySelectorAll("#quick-themes [data-quick]").forEach((b) => b.setAttribute("aria-pressed", !S.custom && +b.dataset.quick === S.theme));
     }
 
     // ---------- ניווט: סמן מחליק, כותרת, תפריט נייד ----------
@@ -300,11 +316,6 @@
         greeting();
         apply();
 
-        const qt = document.getElementById("quick-themes");
-        if (qt) {
-            qt.innerHTML = QUICK.map((i) => `<button type="button" data-quick="${i}" aria-pressed="false" aria-label="ערכת ${THEMES[i].name}" title="${THEMES[i].name}" style="background:linear-gradient(135deg, ${THEMES[i].blobs[0]}, ${THEMES[i].accent})"></button>`).join("");
-            qt.addEventListener("click", (e) => { const b = e.target.closest("[data-quick]"); if (b) setTheme(+b.dataset.quick, e); });
-        }
         syncUI();
 
         const byId = (id) => document.getElementById(id);
@@ -350,6 +361,52 @@
             const r = c.getBoundingClientRect();
             c.style.setProperty("--mx", `${e.clientX - r.left}px`);
             c.style.setProperty("--my", `${e.clientY - r.top}px`);
+        }, { passive: true });
+
+        // ---------- טולטיפ: מסביר מה כל אייקון עושה ----------
+        // לוקח את ה-title / aria-label של הכפתור ומציג בועה מעוצבת (במקום הטולטיפ האיטי של הדפדפן)
+        const tip = document.createElement("div");
+        tip.className = "ui-tip";
+        tip.setAttribute("role", "tooltip");
+        document.body.append(tip);
+        let tipEl = null, tipTimer = null;
+        const TIP_SEL = "button[title], button[aria-label], [data-tip], label[title], .photo-thumb-actions button";
+        function showTip(el) {
+            if (el.title) { el.dataset.tip = el.title; el.removeAttribute("title"); }
+            const text = el.dataset.tip || el.getAttribute("aria-label");
+            // כפתור שכבר כתוב עליו מה הוא עושה לא צריך טולטיפ
+            if (!text || (el.textContent.trim() && el.textContent.trim() === text.trim())) return;
+            tip.textContent = text;
+            const r = el.getBoundingClientRect();
+            tip.classList.add("on");
+            const tw = tip.offsetWidth, th = tip.offsetHeight;
+            let x = r.left + r.width / 2 - tw / 2;
+            x = Math.max(8, Math.min(x, innerWidth - tw - 8));
+            let y = r.top - th - 8;
+            if (y < 8) y = r.bottom + 8;
+            tip.style.transform = `translate(${x}px, ${y}px)`;
+        }
+        function hideTip() { clearTimeout(tipTimer); tipEl = null; tip.classList.remove("on"); }
+        document.addEventListener("pointerover", (e) => {
+            if (e.pointerType === "touch") return;
+            const el = e.target.closest && e.target.closest(TIP_SEL);
+            if (el === tipEl) return;
+            hideTip();
+            if (!el || el.classList.contains("nav-btn")) return;
+            tipEl = el;
+            tipTimer = setTimeout(() => showTip(el), 280);
+        });
+        document.addEventListener("focusin", (e) => { const el = e.target.closest && e.target.closest(TIP_SEL); if (el && el.matches(":focus-visible")) { tipEl = el; showTip(el); } });
+        document.addEventListener("focusout", hideTip);
+        document.addEventListener("pointerdown", hideTip);
+        window.addEventListener("scroll", hideTip, { passive: true });
+
+        // ---------- ביצועים: עוצרים את הרקע הנע בזמן גלילה ----------
+        let scrollTimer = null;
+        window.addEventListener("scroll", () => {
+            root.classList.add("is-scrolling");
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(() => root.classList.remove("is-scrolling"), 180);
         }, { passive: true });
 
         // אדווה בלחיצה על כפתורים

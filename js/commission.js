@@ -45,7 +45,7 @@ function renderCommissionSection() {
         </table>
     ` : `<p class="muted">אין עדיין עמלות רשומות ללקוח זה.</p>`;
 
-    const extraHeader = `<button type="button" class="btn-small btn-primary" data-action="add-commission">+ הוספת עמלה</button>`;
+    const extraHeader = `<button type="button" class="btn-small btn-ghost" data-action="add-commission">+ הוספת עמלה</button>`;
     return renderCollapsibleSection("commission", "עמלות מחברות עיצוב", body, { extraHeaderHtml: extraHeader });
 }
 

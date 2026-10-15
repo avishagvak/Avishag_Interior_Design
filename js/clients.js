@@ -275,8 +275,16 @@ function summarizeStyle(st) {
 }
 
 async function openClientDetail(id) {
-    await ensureTracksLoaded();
-    const { data, error } = await client.from("clients").select("*").eq("id", id).single();
+    // כל הנתונים של הכרטיס נטענים במקביל (ולא אחד אחרי השני) - זה מה שהאט את פתיחת הכרטיס
+    const [{ data, error }] = await Promise.all([
+        client.from("clients").select("*").eq("id", id).single(),
+        ensureTracksLoaded(),
+        loadCurrentClientTasks(id),
+        loadCurrentClientPayments(id),
+        loadCurrentClientPhotos(id),
+        loadCurrentClientCommissions(id),
+        loadCurrentClientSuppliers(id),
+    ]);
     if (error) {
         showToast("שגיאה בטעינת כרטיס הלקוח", "error");
         return;
@@ -285,11 +293,6 @@ async function openClientDetail(id) {
     editingSections = new Set();
     homeDraft = null;
     sectionOpenState = {};
-    await loadCurrentClientTasks(id);
-    await loadCurrentClientPayments(id);
-    await loadCurrentClientPhotos(id);
-    await loadCurrentClientCommissions(id);
-    await loadCurrentClientSuppliers(id);
 
     clientsListView.classList.add("hidden");
     clientDetailView.classList.remove("hidden");
@@ -311,7 +314,7 @@ function renderClientDetail() {
     clientDetailView.innerHTML = `
         <div class="detail-header">
             <h2>${escapeHtml(c.full_name)}</h2>
-            <button class="btn-ghost back-to-clients-btn" data-action="back-to-clients">← חזרה לרשימה</button>
+            <button class="btn-ghost back-to-clients-btn" data-action="back-to-clients">חזרה לרשימה <span aria-hidden="true">←</span></button>
         </div>
 
         ${renderBasicSection(c)}
@@ -395,6 +398,8 @@ function renderBasicSection(c) {
 
     const body = `
         <form id="basic-form">
+            <label for="basic-full-name">שם הלקוח</label>
+            <input type="text" id="basic-full-name" value="${escapeHtml(c.full_name || "")}" required />
             <label for="basic-phone">טלפון</label>
             <input type="tel" id="basic-phone" value="${escapeHtml(c.phone)}" dir="ltr" required />
             <label for="basic-email">מייל</label>
@@ -460,8 +465,7 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
                 <div><span class="detail-label">מספר חללים</span><span>${c.rooms_count ?? "-"}</span></div>
                 <div class="span-2"><span class="detail-label">פירוט חללים</span><span>${escapeHtml(summarizeRoomTypes(roomTypes))}</span></div>
                 <div class="span-2"><span class="detail-label">אופי משפחתי</span><span>${escapeHtml(summarizeFamilyTraits(familyTraits))}</span></div>
-                <div class="span-2"><span class="detail-label">סגנון מועדף</span><span>${escapeHtml(summarizeStyle(preferredStyle))}</span></div>
-                <div class="span-2"><span class="detail-label">גוונים וחומריות</span><span>${escapeHtml(c.color_materials || "-")}</span></div>
+                <div class="span-2"><span class="detail-label">סגנון, גוונים וחומריות</span><span class="pre-line">${escapeHtml(styleText(preferredStyle, c.color_materials) || "-")}</span></div>
             </div>
         `;
         const extraHeader = editBtn(`data-action="edit-home"`);
@@ -474,8 +478,7 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
             household_members: c.household_members || "",
             room_types: JSON.parse(JSON.stringify(roomTypes)),
             family_traits: JSON.parse(JSON.stringify(familyTraits)),
-            preferred_style: JSON.parse(JSON.stringify(preferredStyle)),
-            color_materials: c.color_materials || "",
+            style_text: styleText(preferredStyle, c.color_materials),
         };
     }
 
@@ -493,12 +496,6 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
         </div>
     `).join("");
 
-    const styleChips = STYLE_OPTIONS.map((s) => `
-        <label class="chip ${homeDraft.preferred_style.styles.includes(s) ? "chip-selected" : ""}">
-            <input type="checkbox" class="hidden" data-action="toggle-style" data-style="${s}" ${homeDraft.preferred_style.styles.includes(s) ? "checked" : ""} />
-            ${s}
-        </label>
-    `).join("");
 
     const body = `
         <div id="home-edit-form">
@@ -541,13 +538,8 @@ function renderHomeSection(c, roomTypes, familyTraits, preferredStyle) {
 
             <hr class="divider" />
 
-            <label class="block-label">סגנון עיצובי מועדף</label>
-            <div class="pill-row">${styleChips}</div>
-            <label for="style-notes">דיוקים / ניואנסים בסגנון</label>
-            <textarea id="style-notes" rows="2" data-action="style-notes">${escapeHtml(homeDraft.preferred_style.notes)}</textarea>
-
-            <label for="color-materials">גוונים וחומריות</label>
-            <textarea id="color-materials" rows="2" data-action="color-materials">${escapeHtml(homeDraft.color_materials)}</textarea>
+            <label for="style-text" class="block-label">סגנון, גוונים וחומריות</label>
+            <textarea id="style-text" rows="5" data-action="style-text" placeholder="כל מה שחשוב לזכור: סגנון, צבעים, חומרים, השראות...">${escapeHtml(homeDraft.style_text)}</textarea>
 
             <div class="modal-actions">
                 <button type="button" class="btn-ghost" data-action="cancel-home">ביטול</button>
@@ -623,8 +615,7 @@ clientDetailView.addEventListener("input", (e) => {
     if (action === "pets-type") homeDraft.family_traits.pets.type = el.value;
     if (action === "kids-ages") homeDraft.family_traits.kids.ages = el.value;
     if (action === "family-notes") homeDraft.family_traits.notes = el.value;
-    if (action === "style-notes") homeDraft.preferred_style.notes = el.value;
-    if (action === "color-materials") homeDraft.color_materials = el.value;
+    if (action === "style-text") homeDraft.style_text = el.value;
     if (el.id === "home-members") homeDraft.household_members = el.value;
 });
 
@@ -633,7 +624,10 @@ clientDetailView.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     if (e.target.id === "basic-form") {
+        const fullName = document.getElementById("basic-full-name").value.trim();
+        if (!fullName) { showToast("שם הלקוח לא יכול להיות ריק", "error"); return; }
         const payload = {
+            full_name: fullName,
             phone: document.getElementById("basic-phone").value.trim(),
             email: document.getElementById("basic-email").value.trim() || null,
             address: document.getElementById("basic-address").value.trim() || null,
@@ -644,6 +638,7 @@ clientDetailView.addEventListener("submit", async (e) => {
         editingSections.delete("basic");
         showToast("הפרטים נשמרו", "ok");
         renderClientDetail();
+        loadClientsListView(); // השם מופיע גם ברשימת הלקוחות
     }
 
     if (e.target.id === "status-form") {
@@ -694,8 +689,10 @@ async function saveHomeSection() {
         room_types: JSON.stringify(homeDraft.room_types),
         rooms_count: countRooms(homeDraft.room_types),
         family_traits: JSON.stringify(homeDraft.family_traits),
-        preferred_style: JSON.stringify(homeDraft.preferred_style),
-        color_materials: homeDraft.color_materials.trim() || null,
+        // שדה טקסט חופשי אחד. נשמר במבנה הקיים (preferred_style.notes) כדי לא לשנות את בסיס הנתונים;
+        // color_materials מתרוקן כי התוכן שלו מוזג לתוך אותו שדה.
+        preferred_style: JSON.stringify({ styles: [], notes: homeDraft.style_text.trim() }),
+        color_materials: null,
     };
 
     const { error } = await client.from("clients").update(payload).eq("id", currentClient.id);
@@ -709,4 +706,15 @@ async function saveHomeSection() {
     homeDraft = null;
     showToast("פרטי הבית נשמרו", "ok");
     renderClientDetail();
+}
+
+// מאחד את המידע הישן (סגנונות שסומנו + דיוקים + "גוונים וחומריות") לטקסט חופשי אחד.
+// לקוחות קיימים יראו את כל מה שנכתב בעבר בתוך השדה המאוחד.
+function styleText(preferredStyle, colorMaterials) {
+    const ps = preferredStyle || {};
+    const parts = [];
+    if (Array.isArray(ps.styles) && ps.styles.length) parts.push(ps.styles.join(", "));
+    if (ps.notes && String(ps.notes).trim()) parts.push(String(ps.notes).trim());
+    if (colorMaterials && String(colorMaterials).trim()) parts.push(String(colorMaterials).trim());
+    return parts.join("\n");
 }

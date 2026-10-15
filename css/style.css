@@ -138,7 +138,8 @@ h4 { font-weight: 500; }
 @keyframes drift2 { to { transform: translate(18vw, -12vh) scale(1.1); } }
 @keyframes drift3 { to { transform: translate(-10vw, -18vh) scale(.85); } }
 
-.still .blob { animation-play-state: paused; }
+.still .blob, .is-scrolling .blob { animation-play-state: paused; }
+.blob { will-change: transform; }
 
 /* ============================================================
    זכוכית — משטח בסיסי
@@ -416,8 +417,8 @@ main {
 #client-detail-view.view-enter > *, #clients-list-view.view-enter > * { animation: rise .55s var(--ease) both; }
 
 @keyframes rise {
-    from { opacity: 0; transform: translateY(16px) scale(.988); filter: blur(4px); }
-    to { opacity: 1; transform: none; filter: none; }
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
 }
 
 .view-header {
@@ -1342,9 +1343,9 @@ html, .side, .modal-overlay, .appearance-panel, .table-scroll, .collapsible-body
 
 .wc-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(108px, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: .45rem;
-    overflow-x: auto;
+    padding: 2px;          /* מקום למסגרת ולצל של היום הנוכחי, כדי שלא ייחתכו */
 }
 .wc-day {
     min-height: 118px;
@@ -1456,7 +1457,93 @@ html, .side, .modal-overlay, .appearance-panel, .table-scroll, .collapsible-body
 @media (max-width: 640px) {
     .wc-head { gap: .5rem; }
     .wc-sync { order: 3; }
-    .wc-grid { grid-template-columns: repeat(7, 112px); scroll-snap-type: x mandatory; padding-bottom: .3rem; }
+    .wc-grid { grid-template-columns: repeat(7, 112px); overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 2px .5rem; }
     .wc-day { scroll-snap-align: start; }
     .kpi-side .kpi-card .kpi-value { font-size: 1.3rem; }
 }
+
+
+/* ============================================================
+   עדכון י': טבלאות בלי טשטוש כפול, גלריה, טולטיפ, ערכות, יומן
+   ============================================================ */
+
+/* טבלה שיושבת בתוך כרטיס זכוכית לא צריכה טשטוש משלה - חוסך הרבה עבודה לדפדפן */
+.data-table, .status-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(var(--grgb), calc(var(--ga) + .12));
+}
+.app-view > .table-scroll > .data-table, .app-view > div > .table-scroll > .data-table {
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+    backdrop-filter: blur(var(--blur)) saturate(170%);
+}
+
+/* גלריית תמונות: התצוגה המוגדלת יושבת בתוך המודאל, ולכן המודאל עצמו צריך להיות "שקוף"
+   (טשטוש או אנימציה על המודאל גורמים לתמונה להיחתך ולהיות ממוקמת לא נכון) */
+.modal-box:has(.photo-lightbox) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+    animation: none;
+}
+.modal-overlay:has(.photo-lightbox) { padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; background: none; }
+.photo-lightbox { padding: 64px 84px; }
+.lightbox-img { max-width: 100%; max-height: calc(100vh - 128px); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+
+/* טקסט חופשי עם שורות */
+.pre-line { white-space: pre-line; }
+
+/* טולטיפ */
+.ui-tip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 3000;
+    max-width: 260px;
+    padding: .38rem .7rem;
+    border-radius: 10px;
+    font-size: .82rem;
+    line-height: 1.35;
+    color: var(--bg);
+    background: color-mix(in srgb, var(--ink) 88%, transparent);
+    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .4);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s;
+    white-space: normal;
+}
+.ui-tip.on { opacity: 1; }
+
+/* ערכות נושא: 6 גלויות + "עוד" */
+.appearance-panel .theme-tile.is-extra { display: none; }
+.appearance-panel.show-all-themes .theme-tile.is-extra { display: block; animation: rise .35s var(--ease) both; }
+.ap-more { margin-top: .7rem; }
+
+/* מצב החיבור ליומן Google */
+.wc-sync[data-state="ok"] { border-style: solid; border-color: color-mix(in srgb, var(--c-green) 40%, transparent); color: color-mix(in srgb, var(--c-green) 75%, var(--ink)); }
+.wc-sync[data-state="ok"]::before { content: ""; display: inline-block; width: .45rem; height: .45rem; border-radius: 50%; background: var(--c-green); margin-inline-end: .35rem; vertical-align: middle; }
+.wc-sync[data-state="error"] { color: var(--c-red); border-color: color-mix(in srgb, var(--c-red) 40%, transparent); }
+.wc-ev li.all-day { background: color-mix(in srgb, var(--accent) 26%, rgba(var(--grgb), .55)); border-inline-start-color: var(--at); }
+
+/* כפתור "הוספת תמונות" הוא תווית (label) ולא כפתור - מקבל את אותו מראה כמו שאר הכפתורים */
+label.photo-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    width: auto;
+    margin: 0;
+    padding: .45rem .95rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(var(--grgb), .6);
+    font-family: 'Rubik', sans-serif;
+    font-size: .86rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .25s;
+}
+label.photo-upload-label:hover { background: rgba(var(--grgb), .92); }
